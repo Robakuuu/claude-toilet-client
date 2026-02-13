@@ -1,0 +1,92 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #1a1a2e;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #e2e2e2;
+    /* Prevent scroll when keyboard appears */
+    position: fixed;
+    width: 100%;
+}
+
+.terminal-page {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+}
+
+.terminal-header {
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    background: #16213e;
+    flex-shrink: 0;
+    gap: 6px;
+    font-size: 14px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+}
+
+.terminal-header .title {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.terminal-header select {
+    background: #0f3460;
+    color: #e2e2e2;
+    border: 1px solid #533483;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 13px;
+    max-width: 200px;
+}
+
+.terminal-header button {
+    background: #533483;
+    color: #e2e2e2;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.terminal-header button:hover {
+    background: #6a42a0;
+}
+
+.terminal-body {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.terminal-body .xterm {
+    height: 100%;
+    padding: 4px;
+}
+
+.shortcut-btn {
+    background: #0f3460;
+    color: #e2e2e2;
+    border: 1px solid #533483;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-family: monospace;
+    cursor: pointer;
+    white-space: nowrap;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+}
+
+.shortcut-btn:active {
+    background: #533483;
+}

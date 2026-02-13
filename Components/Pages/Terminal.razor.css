@@ -1,0 +1,8 @@
+::deep .xterm {
+    height: 100%;
+    padding: 4px;
+}
+
+::deep .xterm-viewport {
+    overflow-y: hidden !important;
+}

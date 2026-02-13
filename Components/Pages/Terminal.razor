@@ -1,0 +1,48 @@
+@page "/"
+@rendermode InteractiveServer
+@using ClaudeToiletClient.Services
+@inject PtyService PtyService
+@inject HostSessionService SessionService
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="terminal-page">
+    <div class="terminal-header">
+        <select @bind="_selectedTarget" @bind:after="OnSessionChanged" disabled="@_isConnecting">
+            <option value="new-shell">New Shell</option>
+
+            @if (_hostSessions.Any(s => s.Type == HostSessionType.Tmux))
+            {
+                <optgroup label="tmux sessions">
+                    @foreach (var s in _hostSessions.Where(s => s.Type == HostSessionType.Tmux))
+                    {
+                        <option value="@s.Id" title="@s.Description">@s.Label</option>
+                    }
+                </optgroup>
+            }
+
+            @if (_hostSessions.Any(s => s.Type == HostSessionType.ActiveTerminal))
+            {
+                <optgroup label="active terminals">
+                    @foreach (var s in _hostSessions.Where(s => s.Type == HostSessionType.ActiveTerminal))
+                    {
+                        <option value="@s.Id" title="@s.Description">@s.Label</option>
+                    }
+                </optgroup>
+            }
+        </select>
+        <button @onclick="RefreshSessions" disabled="@_isConnecting">Refresh</button>
+        <button class="shortcut-btn" @onclick="SendShiftTab">S+Tab</button>
+        <button class="shortcut-btn" @onclick="SendCtrlC">C-c</button>
+        <button class="shortcut-btn" @onclick="SendEscape">Esc</button>
+    </div>
+
+    <div class="terminal-body" id="terminal-container">
+        <Xterm @ref="_terminal"
+               Options="_terminalOptions"
+               Addons="_addons"
+               OnFirstRender="OnFirstRender"
+               OnData="OnData" />
+    </div>
+
+</div>

@@ -1,0 +1,20 @@
+services:
+  toilet-client:
+    build: .
+    container_name: claude-toilet-client
+    network_mode: host
+    pid: host
+    privileged: true
+    environment:
+      - ASPNETCORE_URLS=http://0.0.0.0:5000
+      - ASPNETCORE_ENVIRONMENT=Production
+      - HOST_USER=${USER:-root}
+      - TERM=xterm-256color
+      # === Security ===
+      # Password required to access the terminal (CHANGE THIS!)
+      - AUTH_PASSWORD=toilet123
+      # Comma-separated list of allowed subnets (CIDR notation)
+      # Leave empty to allow all IPs (password-only protection)
+      # Examples: LAN + WireGuard VPN
+      - ALLOWED_SUBNETS=192.168.0.0/16,10.0.0.0/8
+    restart: unless-stopped
