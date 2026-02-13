@@ -5,7 +5,7 @@ COPY ClaudeToiletClient.csproj .
 RUN dotnet restore
 
 COPY . .
-RUN dotnet publish -c Release -o /app/publish
+RUN dotnet publish ClaudeToiletClient.csproj -c Release -o /app/publish
 
 # Compile the native PTY helper
 FROM gcc:12 AS native-build
