@@ -1,0 +1,15 @@
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.idea/
+appsettings.Development.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Native build artifacts
+*.so
+*.o
