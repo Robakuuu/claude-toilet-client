@@ -11,6 +11,16 @@
         <select @bind="_selectedTarget" @bind:after="OnSessionChanged" disabled="@_isConnecting">
             <option value="new-shell">New Shell</option>
 
+            @if (_serverSessions.Any())
+            {
+                <optgroup label="server sessions">
+                    @foreach (var s in _serverSessions)
+                    {
+                        <option value="server-session:@s.Id">@FormatSessionLabel(s)</option>
+                    }
+                </optgroup>
+            }
+
             @if (_hostSessions.Any(s => s.Type == HostSessionType.Tmux))
             {
                 <optgroup label="tmux sessions">
@@ -32,6 +42,8 @@
             }
         </select>
         <button @onclick="RefreshSessions" disabled="@_isConnecting">Refresh</button>
+        <button class="shortcut-btn close-btn" @onclick="CloseCurrentSession"
+                disabled="@(_sessionId == null || _isConnecting)" title="Kill current session">X</button>
         <button class="shortcut-btn" @onclick="SendShiftTab">S+Tab</button>
         <button class="shortcut-btn" @onclick="SendCtrlC">C-c</button>
         <button class="shortcut-btn" @onclick="SendEscape">Esc</button>

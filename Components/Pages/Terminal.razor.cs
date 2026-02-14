@@ -11,8 +11,8 @@ public partial class Terminal : IDisposable
     private string? _sessionId;
     private string _selectedTarget = "new-shell";
     private bool _isConnecting;
-    private string _connectionId = Guid.NewGuid().ToString("N");
     private List<HostSession> _hostSessions = [];
+    private List<PtySessionInfo> _serverSessions = [];
 
     private readonly TerminalOptions _terminalOptions = new()
     {
@@ -71,34 +71,46 @@ public partial class Terminal : IDisposable
 
         try
         {
+            // Detach from current session (don't kill it)
             if (_sessionId != null)
             {
-                PtyService.DisposeSession(_connectionId);
+                PtyService.DetachFromSession(_sessionId);
                 _sessionId = null;
-                _connectionId = Guid.NewGuid().ToString("N");
             }
 
             var cols = await _terminal.GetColumns();
             var rows = await _terminal.GetRows();
-
             await _terminal.Clear();
 
-            _sessionId = PtyService.CreateSession(
-                _connectionId,
-                _selectedTarget,
-                cols,
-                rows,
-                async output =>
+            if (_selectedTarget.StartsWith("server-session:"))
+            {
+                // Reconnect to existing server-side session
+                var existingSessionId = _selectedTarget["server-session:".Length..];
+                var attached = PtyService.AttachToSession(existingSessionId, CreateOutputCallback());
+
+                if (attached != null)
                 {
-                    try
+                    _sessionId = attached;
+                    PtyService.Resize(_sessionId, cols, rows);
+
+                    // Replay scrollback
+                    var scrollback = PtyService.GetScrollback(_sessionId);
+                    if (!string.IsNullOrEmpty(scrollback))
                     {
-                        await InvokeAsync(async () =>
-                        {
-                            await _terminal.Write(output);
-                        });
+                        await _terminal.Write(scrollback);
                     }
-                    catch (ObjectDisposedException) { }
-                });
+                }
+                else
+                {
+                    await _terminal.WriteLine("\r\nSession no longer available.");
+                }
+            }
+            else
+            {
+                // Create new session, then attach
+                _sessionId = PtyService.CreateSession(_selectedTarget, cols, rows);
+                PtyService.AttachToSession(_sessionId, CreateOutputCallback());
+            }
         }
         catch (Exception ex)
         {
@@ -109,6 +121,21 @@ public partial class Terminal : IDisposable
             _isConnecting = false;
             StateHasChanged();
         }
+    }
+
+    private Func<string, Task> CreateOutputCallback()
+    {
+        return async output =>
+        {
+            try
+            {
+                await InvokeAsync(async () =>
+                {
+                    await _terminal.Write(output);
+                });
+            }
+            catch (ObjectDisposedException) { }
+        };
     }
 
     private async Task OnData(string data)
@@ -147,6 +174,23 @@ public partial class Terminal : IDisposable
     private async Task LoadSessions()
     {
         _hostSessions = await SessionService.ListAllSessionsAsync();
+        _serverSessions = PtyService.GetActiveSessions()
+            .Where(s => s.Id != _sessionId)
+            .ToList();
+    }
+
+    private async Task CloseCurrentSession()
+    {
+        if (_sessionId != null)
+        {
+            PtyService.DestroySession(_sessionId);
+            _sessionId = null;
+            await _terminal.Clear();
+            await _terminal.WriteLine("\r\nSession closed.");
+            await LoadSessions();
+            _selectedTarget = "new-shell";
+            StateHasChanged();
+        }
     }
 
     [JSInvokable]
@@ -170,8 +214,23 @@ public partial class Terminal : IDisposable
         _dotNetRef?.Dispose();
         if (_sessionId != null)
         {
-            PtyService.DisposeSession(_connectionId);
+            PtyService.DetachFromSession(_sessionId);
         }
+    }
+
+    private static string FormatSessionLabel(PtySessionInfo session)
+    {
+        var target = session.Target switch
+        {
+            "new-shell" => "shell",
+            var t when t.StartsWith("tmux:") => $"tmux:{t[5..]}",
+            var t when t.StartsWith("pty:") => $"pty:{t.Split(':')[1]}",
+            var t => t
+        };
+        var age = DateTime.UtcNow - session.CreatedAt;
+        var ageStr = age.TotalHours < 1 ? $"{(int)age.TotalMinutes}m" : $"{(int)age.TotalHours}h";
+        var status = session.HasClient ? "attached" : "detached";
+        return $"[{session.Id[..6]}] {target} ({ageStr}, {status})";
     }
 
     private record TerminalDimensions(int Cols, int Rows);
