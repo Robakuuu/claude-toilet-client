@@ -13,3 +13,4 @@ Thumbs.db
 # Native build artifacts
 *.so
 *.o
+docker-compose.local.yml
